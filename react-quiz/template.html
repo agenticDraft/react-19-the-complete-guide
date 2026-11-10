@@ -1,0 +1,690 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>React Interview Quiz</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E⚛️%3C/text%3E%3C/svg%3E" />
+  <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css"
+    integrity="sha384-eFTL69TLRZTkNfYZOLM+G04821K1qZao/4QLJbet1pP4tcF+fdXq/9CdqAbWRl/L" crossorigin="anonymous" />
+  <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css"
+    integrity="sha384-wH75j6z1lH97ZOpMOInqhgKzFkAInZPPSPlZpYKYTOqsaizPvhQZmAtLcPKXpLyH" crossorigin="anonymous" disabled />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"
+    integrity="sha384-/TQbtLCAerC3jgaim+N78RZSDYV7ryeoBCVqTuzRrFec2akfBkHS7ACQ3PQhvMVi" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"
+    integrity="sha384-F/bZzf7p3Joyp5psL90p/p89AZJsndkSoGwRpXcZhleCWhd8SnRuoYo4d0yirjJp" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --surface: #ffffff;
+      --surface-2: #f0f2f5;
+      --text: #1b1f24;
+      --muted: #5c6670;
+      --border: #dde1e6;
+      --accent: #087ea4;
+      --accent-soft: #e6f4f8;
+      --known: #1a7f37;
+      --known-soft: #e3f4e8;
+      --review: #b35900;
+      --review-soft: #fdf0e1;
+      --code-bg: #f6f8fa;
+      --shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 4px 16px rgba(16, 24, 40, 0.06);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0f1216;
+        --surface: #171b21;
+        --surface-2: #1f242c;
+        --text: #e6e9ed;
+        --muted: #9aa4af;
+        --border: #2b323b;
+        --accent: #58c4dc;
+        --accent-soft: #15303a;
+        --known: #4ac26b;
+        --known-soft: #16301f;
+        --review: #f0a54a;
+        --review-soft: #352614;
+        --code-bg: #0d1117;
+        --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.3);
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #0f1216;
+      --surface: #171b21;
+      --surface-2: #1f242c;
+      --text: #e6e9ed;
+      --muted: #9aa4af;
+      --border: #2b323b;
+      --accent: #58c4dc;
+      --accent-soft: #15303a;
+      --known: #4ac26b;
+      --known-soft: #16301f;
+      --review: #f0a54a;
+      --review-soft: #352614;
+      --code-bg: #0d1117;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.3);
+    }
+
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+    button, select, input { font: inherit; color: inherit; }
+    button { cursor: pointer; }
+    kbd {
+      font: 12px ui-monospace, SFMono-Regular, Menlo, monospace;
+      padding: 1px 5px;
+      border: 1px solid var(--border);
+      border-bottom-width: 2px;
+      border-radius: 4px;
+      background: var(--surface-2);
+    }
+
+    .wrap { max-width: 860px; margin: 0 auto; padding: 0 16px; }
+
+    /* Header + progress */
+    header.top {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background: color-mix(in srgb, var(--bg) 88%, transparent);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+    }
+    .top-row { display: flex; align-items: center; gap: 12px; padding: 12px 0 8px; }
+    .top-row h1 { font-size: 18px; margin: 0; flex: 1; letter-spacing: -0.01em; }
+    .top-row h1 span { color: var(--accent); }
+    .icon-btn {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 8px;
+      padding: 4px 10px;
+      font-size: 14px;
+    }
+    .progress { display: flex; height: 6px; border-radius: 99px; overflow: hidden; background: var(--surface-2); }
+    .progress .known { background: var(--known); }
+    .progress .review { background: var(--review); }
+    .stats { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13px; color: var(--muted); padding: 6px 0 10px; }
+    .stats b { color: var(--text); font-variant-numeric: tabular-nums; }
+    .stats .sw { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+
+    /* Controls */
+    .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 16px 0; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; padding: 3px; background: var(--surface); }
+    .seg button { border: 0; background: none; padding: 5px 14px; border-radius: 7px; font-size: 14px; color: var(--muted); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+    :root[data-theme="dark"] .seg button[aria-pressed="true"] { color: #062029; }
+    select, input[type="search"] {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 10px;
+      padding: 6px 10px;
+      font-size: 14px;
+      min-width: 0;
+      max-width: 100%;
+    }
+    input[type="search"] { flex: 1 1 200px; }
+    .check { display: inline-flex; gap: 6px; align-items: center; font-size: 14px; color: var(--muted); }
+    .spacer { flex: 1; }
+    .link-btn { border: 0; background: none; color: var(--muted); font-size: 13px; text-decoration: underline; padding: 4px; }
+
+    /* Quiz card */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      padding: 24px;
+    }
+    .card-meta { display: flex; justify-content: space-between; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); }
+    .chip { background: var(--accent-soft); color: var(--accent); padding: 2px 10px; border-radius: 99px; font-weight: 600; }
+    .question { font-size: 22px; line-height: 1.35; margin: 16px 0 20px; letter-spacing: -0.01em; }
+    .qnum { color: var(--muted); font-weight: 500; margin-right: 6px; }
+    .reveal {
+      border: 1px solid var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-radius: 10px;
+      padding: 8px 18px;
+      font-weight: 600;
+    }
+    .reveal.small { padding: 4px 12px; font-size: 13px; }
+    .grade { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; padding-top: 16px; border-top: 1px dashed var(--border); }
+    .grade button { border-radius: 10px; padding: 8px 14px; font-weight: 600; border: 1px solid; display: inline-flex; gap: 8px; align-items: center; }
+    .grade [data-grade="known"] { color: var(--known); background: var(--known-soft); border-color: var(--known); }
+    .grade [data-grade="review"] { color: var(--review); background: var(--review-soft); border-color: var(--review); }
+    .grade button[aria-pressed="true"] { box-shadow: inset 0 0 0 2px currentColor; }
+
+    .quiz-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 16px 0; }
+    .quiz-nav button { border: 1px solid var(--border); background: var(--surface); border-radius: 10px; padding: 6px 14px; }
+    .quiz-nav button:disabled { opacity: 0.4; cursor: default; }
+    .hint { text-align: center; font-size: 12px; color: var(--muted); margin: 0 0 32px; }
+
+    .pill { font-size: 12px; font-weight: 600; padding: 2px 10px; border-radius: 99px; background: var(--surface-2); color: var(--muted); }
+    .pill[data-status="known"] { background: var(--known-soft); color: var(--known); }
+    .pill[data-status="review"] { background: var(--review-soft); color: var(--review); }
+
+    /* Answer markdown */
+    .answer { margin-top: 20px; overflow-wrap: anywhere; }
+    .answer > :first-child { margin-top: 0; }
+    .answer p, .answer ul, .answer ol { margin: 0 0 12px; }
+    .answer ul, .answer ol { padding-left: 22px; }
+    .answer li { margin: 4px 0; }
+    .answer code {
+      font: 0.88em ui-monospace, SFMono-Regular, Menlo, monospace;
+      background: var(--surface-2);
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+    .answer pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      overflow-x: auto;
+      margin: 0 0 14px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .answer pre code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; }
+    .answer pre code.hljs { background: none; padding: 0; }
+    .answer blockquote {
+      margin: 0 0 12px;
+      padding: 8px 14px;
+      border-left: 3px solid var(--accent);
+      background: var(--accent-soft);
+      border-radius: 0 8px 8px 0;
+    }
+    .answer blockquote p { margin: 0; }
+    .answer a { color: var(--accent); }
+
+    /* Done screen */
+    .done { text-align: center; }
+    .done h2 { margin: 0 0 8px; }
+    .done p { color: var(--muted); }
+    .done .actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 16px; }
+
+    /* Browse list */
+    .group h2 { font-size: 15px; color: var(--muted); margin: 28px 0 10px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+    .item { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+    .item-head { display: flex; gap: 10px; align-items: flex-start; }
+    .item-q { flex: 1; font-weight: 600; }
+    .item .reveal { margin-top: 10px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 8px; background: var(--border); flex: none; }
+    .item[data-status="known"] .dot { background: var(--known); }
+    .item[data-status="review"] .dot { background: var(--review); }
+    .item.flash { outline: 2px solid var(--accent); }
+    .empty { text-align: center; color: var(--muted); padding: 40px 0; }
+
+    @media (max-width: 560px) {
+      .card { padding: 18px; border-radius: 12px; }
+      .question { font-size: 19px; }
+      .hint { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <div class="top-row">
+        <h1>React 19 <span>Interview Quiz</span></h1>
+        <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle dark mode">◐</button>
+      </div>
+      <div class="progress" id="progress-bar"></div>
+      <div class="stats" id="stats"></div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="controls">
+      <div class="seg" role="group" aria-label="Mode">
+        <button type="button" data-mode="quiz">Quiz</button>
+        <button type="button" data-mode="browse">Browse</button>
+      </div>
+      <select id="section-select" aria-label="Section"></select>
+      <select id="filter-select" aria-label="Filter by status">
+        <option value="all">All questions</option>
+        <option value="new">Not seen yet</option>
+        <option value="review">To review</option>
+        <option value="known">Known</option>
+      </select>
+      <label class="check" id="shuffle-wrap"><input type="checkbox" id="shuffle" /> Shuffle</label>
+      <input type="search" id="search" placeholder="Search questions and answers…" />
+      <span class="spacer"></span>
+      <button class="link-btn" type="button" id="reset">Reset progress</button>
+    </div>
+
+    <div id="view"></div>
+  </main>
+
+  <script>
+    const QUESTIONS = /*__QUESTIONS__*/[];
+
+    const PROGRESS_KEY = "react-quiz-progress-v1";
+    const PREFS_KEY = "react-quiz-prefs-v1";
+    const SECTIONS = [...new Set(QUESTIONS.map((q) => q.section))];
+    const BY_ID = new Map(QUESTIONS.map((q) => [q.id, q]));
+
+    // Storage can be missing (private window, blocked site data) — the quiz still works, it just forgets.
+    function loadJSON(key, fallback) {
+      try {
+        return JSON.parse(localStorage.getItem(key)) ?? fallback;
+      } catch {
+        return fallback;
+      }
+    }
+    function saveJSON(key, value) {
+      try {
+        localStorage.setItem(key, JSON.stringify(value));
+      } catch {}
+    }
+
+    const prefs = loadJSON(PREFS_KEY, {});
+    const state = {
+      mode: prefs.mode === "browse" ? "browse" : "quiz",
+      section: SECTIONS.includes(prefs.section) ? prefs.section : "all",
+      filter: prefs.filter || "all",
+      shuffle: Boolean(prefs.shuffle),
+      search: "",
+      progress: loadJSON(PROGRESS_KEY, {}), // { [id]: "known" | "review" }
+      deck: [],
+      index: 0,
+      revealed: false,
+      open: new Set(), // expanded items in browse mode
+    };
+
+    const $ = (selector) => document.querySelector(selector);
+    const view = $("#view");
+
+    function escapeHtml(text) {
+      return text.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+    }
+    function statusOf(id) {
+      return state.progress[id] || "new";
+    }
+    function shortSection(section) {
+      return section.replace(/^Section /, "");
+    }
+
+    // ---------- Markdown ----------
+    const answerCache = new Map();
+
+    function renderInline(text) {
+      return window.marked ? marked.parseInline(text) : escapeHtml(text);
+    }
+    function renderAnswer(q) {
+      if (!answerCache.has(q.id)) {
+        // Offline fallback: without the CDN libraries, show the raw markdown.
+        const html = window.marked
+          ? marked.parse(q.answer)
+          : `<pre><code>${escapeHtml(q.answer)}</code></pre>`;
+        answerCache.set(q.id, html);
+      }
+      return answerCache.get(q.id);
+    }
+    function highlightIn(element) {
+      if (!window.hljs) return;
+      element.querySelectorAll("pre code").forEach((block) => hljs.highlightElement(block));
+    }
+
+    // ---------- Deck ----------
+    function matchesFilters(q) {
+      const sectionOk = state.section === "all" || q.section === state.section;
+      const filterOk = state.filter === "all" || statusOf(q.id) === state.filter;
+      return sectionOk && filterOk;
+    }
+
+    function shuffled(list) {
+      const copy = [...list];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    // Decides which questions the quiz asks and in what order.
+    // Tweak here to change the study strategy (e.g. put "review" questions first).
+    function buildDeck() {
+      const deck = QUESTIONS.filter(matchesFilters);
+      return state.shuffle ? shuffled(deck) : deck;
+    }
+
+    function restartDeck() {
+      state.deck = buildDeck();
+      state.index = 0;
+      state.revealed = false;
+    }
+
+    function savePrefs() {
+      saveJSON(PREFS_KEY, {
+        mode: state.mode,
+        section: state.section,
+        filter: state.filter,
+        shuffle: state.shuffle,
+        theme: document.documentElement.dataset.theme,
+      });
+    }
+
+    function grade(id, status) {
+      state.progress[id] = status;
+      saveJSON(PROGRESS_KEY, state.progress);
+      renderStats();
+    }
+
+    // ---------- Header stats ----------
+    function renderStats() {
+      const total = QUESTIONS.length;
+      const known = QUESTIONS.filter((q) => statusOf(q.id) === "known").length;
+      const review = QUESTIONS.filter((q) => statusOf(q.id) === "review").length;
+      const unseen = total - known - review;
+
+      $("#progress-bar").innerHTML =
+        `<div class="known" style="width:${(known / total) * 100}%"></div>` +
+        `<div class="review" style="width:${(review / total) * 100}%"></div>`;
+      $("#stats").innerHTML =
+        `<span><span class="sw" style="background:var(--known)"></span>Known <b>${known}</b></span>` +
+        `<span><span class="sw" style="background:var(--review)"></span>To review <b>${review}</b></span>` +
+        `<span><span class="sw" style="background:var(--border)"></span>Not seen <b>${unseen}</b></span>` +
+        `<span>Total <b>${total}</b></span>`;
+    }
+
+    // ---------- Controls ----------
+    function renderControls() {
+      document.querySelectorAll(".seg button").forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.mode === state.mode));
+      });
+      $("#section-select").value = state.section;
+      $("#filter-select").value = state.filter;
+      $("#shuffle").checked = state.shuffle;
+      $("#shuffle-wrap").hidden = state.mode !== "quiz";
+      $("#search").hidden = state.mode !== "browse";
+    }
+
+    function gradeButtons(id) {
+      const current = statusOf(id);
+      return `
+        <div class="grade">
+          <button type="button" data-grade="known" data-id="${id}" aria-pressed="${current === "known"}">✓ I knew it <kbd>1</kbd></button>
+          <button type="button" data-grade="review" data-id="${id}" aria-pressed="${current === "review"}">↻ Review again <kbd>2</kbd></button>
+        </div>`;
+    }
+
+    // ---------- Quiz view ----------
+    function renderQuiz() {
+      const { deck, index } = state;
+
+      if (deck.length === 0) {
+        view.innerHTML = `<div class="card empty">No questions match these filters.</div>`;
+        return;
+      }
+      if (index >= deck.length) {
+        renderDone();
+        return;
+      }
+
+      const q = deck[index];
+      const status = statusOf(q.id);
+      view.innerHTML = `
+        <article class="card">
+          <div class="card-meta">
+            <span class="chip">${escapeHtml(shortSection(q.section))}</span>
+            <span>${index + 1} / ${deck.length}</span>
+          </div>
+          <h2 class="question"><span class="qnum">#${q.id}</span>${renderInline(q.question)}</h2>
+          <button type="button" class="reveal" data-action="reveal" aria-expanded="${state.revealed}">
+            ${state.revealed ? "hide answer" : "more-info"}
+          </button>
+          ${state.revealed ? `<div class="answer">${renderAnswer(q)}</div>${gradeButtons(q.id)}` : ""}
+        </article>
+        <nav class="quiz-nav">
+          <button type="button" data-action="prev" ${index === 0 ? "disabled" : ""}>← Prev</button>
+          <span class="pill" data-status="${status}">${status === "new" ? "not seen" : status === "known" ? "known" : "to review"}</span>
+          <button type="button" data-action="next">${index === deck.length - 1 ? "Finish" : "Next →"}</button>
+        </nav>
+        <p class="hint"><kbd>Space</kbd> show / hide · <kbd>←</kbd> <kbd>→</kbd> navigate · <kbd>1</kbd> knew it · <kbd>2</kbd> review again</p>`;
+      highlightIn(view);
+    }
+
+    function renderDone() {
+      const ids = state.deck.map((q) => q.id);
+      const known = ids.filter((id) => statusOf(id) === "known").length;
+      const review = ids.filter((id) => statusOf(id) === "review").length;
+      view.innerHTML = `
+        <div class="card done">
+          <h2>Round finished 🎉</h2>
+          <p>${ids.length} ${ids.length === 1 ? "question" : "questions"} ·<b style="color:var(--known)">${known} known</b> · <b style="color:var(--review)">${review} to review</b></p>
+          <div class="actions">
+            ${review > 0 ? `<button type="button" class="reveal" data-action="drill-review">Drill the ${review} to review</button>` : ""}
+            <button type="button" class="reveal" data-action="restart">Start this round again</button>
+          </div>
+        </div>`;
+    }
+
+    function goTo(index) {
+      state.index = Math.max(0, Math.min(index, state.deck.length));
+      state.revealed = false;
+      renderQuiz();
+      window.scrollTo({ top: 0 });
+    }
+
+    // ---------- Browse view ----------
+    function renderBrowse() {
+      const term = state.search.trim().toLowerCase();
+      const visible = QUESTIONS.filter(
+        (q) => matchesFilters(q) && (!term || (q.question + "\n" + q.answer).toLowerCase().includes(term)),
+      );
+
+      if (visible.length === 0) {
+        view.innerHTML = `<p class="empty">No questions match.</p>`;
+        return;
+      }
+
+      const groups = SECTIONS.map((section) => [section, visible.filter((q) => q.section === section)])
+        .filter(([, items]) => items.length > 0);
+
+      view.innerHTML = groups
+        .map(([section, items]) => `
+          <section class="group">
+            <h2>${escapeHtml(section)}</h2>
+            <ol class="list">${items.map(browseItem).join("")}</ol>
+          </section>`)
+        .join("");
+      highlightIn(view);
+    }
+
+    function browseItem(q) {
+      const isOpen = state.open.has(q.id);
+      return `
+        <li class="item" id="q-${q.id}" data-status="${statusOf(q.id)}">
+          <div class="item-head">
+            <span class="qnum">${q.id}.</span>
+            <span class="item-q">${renderInline(q.question)}</span>
+            <span class="dot" title="${statusOf(q.id)}"></span>
+          </div>
+          <button type="button" class="reveal small" data-action="toggle" data-id="${q.id}" aria-expanded="${isOpen}">
+            ${isOpen ? "hide answer" : "more-info"}
+          </button>
+          ${isOpen ? `<div class="answer">${renderAnswer(q)}</div>${gradeButtons(q.id)}` : ""}
+        </li>`;
+    }
+
+    // Cross-links inside answers look like "#50-where-does-react-store-state...".
+    function jumpToQuestion(id) {
+      if (!BY_ID.has(id)) return;
+      if (state.mode === "quiz") {
+        const deckIndex = state.deck.findIndex((q) => q.id === id);
+        if (deckIndex !== -1) {
+          goTo(deckIndex);
+          return;
+        }
+      }
+      // Not in the current deck: show it in Browse with filters cleared.
+      state.mode = "browse";
+      state.section = "all";
+      state.filter = "all";
+      state.search = "";
+      $("#search").value = "";
+      state.open.add(id);
+      savePrefs();
+      restartDeck(); // keep the quiz deck in sync with the cleared filters
+      render();
+      const item = document.getElementById(`q-${id}`);
+      item.scrollIntoView({ behavior: "smooth", block: "center" });
+      item.classList.add("flash");
+      setTimeout(() => item.classList.remove("flash"), 1500);
+    }
+
+    // ---------- Render + events ----------
+    function render() {
+      renderControls();
+      renderStats();
+      if (state.mode === "quiz") renderQuiz();
+      else renderBrowse();
+    }
+
+    view.addEventListener("click", (event) => {
+      const link = event.target.closest('a[href^="#"]');
+      if (link) {
+        const match = link.getAttribute("href").match(/^#(\d+)-/);
+        if (match) {
+          event.preventDefault();
+          jumpToQuestion(Number(match[1]));
+        }
+        return;
+      }
+
+      const button = event.target.closest("button");
+      if (!button) return;
+
+      if (button.dataset.grade) {
+        const id = Number(button.dataset.id);
+        grade(id, button.dataset.grade);
+        if (state.mode === "quiz") {
+          goTo(state.index + 1);
+        } else {
+          const item = document.getElementById(`q-${id}`);
+          item.dataset.status = button.dataset.grade;
+          item.querySelectorAll("[data-grade]").forEach((b) => {
+            b.setAttribute("aria-pressed", String(b === button));
+          });
+        }
+        return;
+      }
+
+      switch (button.dataset.action) {
+        case "reveal":
+          state.revealed = !state.revealed;
+          renderQuiz();
+          break;
+        case "prev":
+          goTo(state.index - 1);
+          break;
+        case "next":
+          goTo(state.index + 1);
+          break;
+        case "restart":
+          restartDeck();
+          renderQuiz();
+          break;
+        case "drill-review":
+          state.filter = "review";
+          savePrefs();
+          restartDeck();
+          render();
+          break;
+        case "toggle": {
+          const id = Number(button.dataset.id);
+          if (state.open.has(id)) state.open.delete(id);
+          else state.open.add(id);
+          const item = document.getElementById(`q-${id}`);
+          item.outerHTML = browseItem(BY_ID.get(id));
+          highlightIn(document.getElementById(`q-${id}`));
+          break;
+        }
+      }
+    });
+
+    document.querySelectorAll(".seg button").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.mode = button.dataset.mode;
+        savePrefs();
+        render();
+      });
+    });
+
+    function onFilterChange() {
+      savePrefs();
+      restartDeck();
+      render();
+    }
+    $("#section-select").addEventListener("change", (e) => {
+      state.section = e.target.value;
+      onFilterChange();
+    });
+    $("#filter-select").addEventListener("change", (e) => {
+      state.filter = e.target.value;
+      onFilterChange();
+    });
+    $("#shuffle").addEventListener("change", (e) => {
+      state.shuffle = e.target.checked;
+      onFilterChange();
+    });
+    $("#search").addEventListener("input", (e) => {
+      state.search = e.target.value;
+      renderBrowse();
+    });
+    $("#reset").addEventListener("click", () => {
+      if (!confirm("Forget which questions you know? This cannot be undone.")) return;
+      state.progress = {};
+      saveJSON(PROGRESS_KEY, state.progress);
+      restartDeck();
+      render();
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (state.mode !== "quiz" || event.metaKey || event.ctrlKey || event.altKey) return;
+      if (event.target.closest("input, select, textarea")) return;
+      const q = state.deck[state.index];
+
+      if (event.key === " " && q) {
+        event.preventDefault();
+        state.revealed = !state.revealed;
+        renderQuiz();
+      } else if (event.key === "ArrowRight") {
+        goTo(state.index + 1);
+      } else if (event.key === "ArrowLeft") {
+        goTo(state.index - 1);
+      } else if ((event.key === "1" || event.key === "2") && q && state.revealed) {
+        grade(q.id, event.key === "1" ? "known" : "review");
+        goTo(state.index + 1);
+      }
+    });
+
+    // ---------- Theme ----------
+    function applyTheme(theme) {
+      document.documentElement.dataset.theme = theme;
+      $("#hljs-light").disabled = theme === "dark";
+      $("#hljs-dark").disabled = theme !== "dark";
+    }
+    $("#theme-toggle").addEventListener("click", () => {
+      applyTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
+      savePrefs();
+    });
+
+    // ---------- Init ----------
+    $("#section-select").innerHTML =
+      `<option value="all">All sections</option>` +
+      SECTIONS.map((s) => `<option value="${escapeHtml(s)}">${escapeHtml(shortSection(s))}</option>`).join("");
+
+    applyTheme(prefs.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
+    restartDeck();
+    render();
+  </script>
+</body>
+</html>
