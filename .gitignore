@@ -30,3 +30,4 @@ dist-ssr
 settings.json
 *.yaml
 .playwright-mcp
+.claude/artifacts/
