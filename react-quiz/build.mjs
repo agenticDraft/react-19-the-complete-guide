@@ -1,8 +1,11 @@
-// Builds react-quiz/index.html from REACT-NOTES.md.
-// REACT-NOTES.md stays the single source of truth; re-run after editing it:
+// Builds the quiz from REACT-NOTES.md (the single source of truth); re-run after editing it:
 //   node react-quiz/build.mjs
+// Outputs:
+//   react-quiz/index.html            full document, open locally (no Claude grading)
+//   .claude/artifacts/react-quiz.html page fragment published to claude.ai, which adds
+//                                     the document skeleton itself (gitignored)
 
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -10,6 +13,8 @@ const here = dirname(fileURLToPath(import.meta.url));
 const notesPath = join(here, "..", "REACT-NOTES.md");
 const templatePath = join(here, "template.html");
 const outPath = join(here, "index.html");
+const artifactDir = join(here, "..", ".claude", "artifacts");
+const artifactPath = join(artifactDir, "react-quiz.html");
 const DATA_TOKEN = "/*__QUESTIONS__*/[]";
 
 // Expected shape of every entry in REACT-NOTES.md:
@@ -84,7 +89,25 @@ if (!template.includes(DATA_TOKEN)) {
 
 // A replacer function, not a string: answers contain "$" (template literals,
 // prices), which String.replace would otherwise treat as $1/$& patterns.
-writeFileSync(outPath, template.replace(DATA_TOKEN, () => json));
+const fragment = template.replace(DATA_TOKEN, () => json);
+
+const localPage = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+</head>
+<body>
+${fragment}
+</body>
+</html>
+`;
+
+writeFileSync(outPath, localPage);
+mkdirSync(artifactDir, { recursive: true });
+writeFileSync(artifactPath, fragment);
 
 const sections = new Set(questions.map((q) => q.section)).size;
-console.log(`Built ${outPath} — ${questions.length} questions in ${sections} sections.`);
+console.log(`Built ${questions.length} questions in ${sections} sections:`);
+console.log(`  local    ${outPath}`);
+console.log(`  claude.ai ${artifactPath}`);
