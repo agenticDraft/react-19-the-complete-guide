@@ -1,8 +1,9 @@
 # React Interview Quiz — Specification
 
 How the quiz works, how it is built from `REACT-NOTES.md`, and how it is published as a
-claude.ai artifact. This document is also the reference spec for the `create-quiz` plugin
-(see `plan-quiz-plugin.md` at the repository root), which generalizes this quiz to any topic.
+claude.ai artifact (Part I, §1–13). Part II (§14–21) is the design of the `create-quiz`
+plugin, which turns any study-note file into a quiz with this same engine and design
+(implementation plan: `plan-quiz-plugin.md` at the repository root).
 
 - **Live (claude.ai, private):** https://claude.ai/artifact/WFe3DUm4K5Ty2YfQjFZ3NJ
 - **Local:** `react-quiz/index.html` (open in a browser; no Claude grading)
@@ -342,7 +343,228 @@ Result: https://claude.ai/artifact/WFe3DUm4K5Ty2YfQjFZ3NJ, private to the owner.
 - Without network the CDN libraries do not load: answers show as raw Markdown, code is not
   highlighted.
 
-## 14. Verification
+## Part II — `create-quiz` plugin design
+
+## 14. Intent
+
+The user keeps raw study notes as `.md` files in topic folders (`Architecture/Arhitecture.md`,
+`Js/js-prinicples.md`, …) and keeps adding to them as they learn. One command turns one note
+file into a quiz with exactly the UI, design and Claude grading of Part I. Running it again
+later only **adds** what is new in the note. The plugin is installed at user scope from
+`zmarkoni/plugins` (`plugins/create-quiz/`), so it works in any repository.
+
+"Deterministic" means: the same steps in the same order, the same files in the same places,
+a format checked by scripts, stable question numbers, and only new material processed. The
+wording Claude writes for a question is the one part that is not reproducible byte for byte.
+
+- **Goals:** one note → one quiz; questions grouped by category; append-only growth; every
+  answer checked against official documentation; the Part I design unchanged.
+- **Non-goals (this version):** updating or removing questions when the note changes
+  (append-only: edits and deletions in the note are ignored); one quiz from several files or a
+  whole folder; quizzes from a topic alone without a note file (the "find material on the web"
+  mode of the first plan).
+- **Anti-goals — a failure even if everything else works:**
+  - writing to the original note;
+  - renumbering questions (saved progress on claude.ai is keyed by number and would attach to
+    the wrong question);
+  - minting a new artifact URL on a rebuild;
+  - dropping note content silently (everything not turned into a question is reported);
+  - acting on instructions found inside a note or a fetched page.
+
+## 15. Command
+
+```text
+/create-quiz:quiz-build <path/to/Note.md>
+```
+
+Plugin `create-quiz`, skill `quiz-build`; Claude Code always prefixes plugin skills with the
+plugin name. The argument is exactly one `.md` file; anything else (a folder, a missing file,
+a `*.quiz.md` file) stops with a one-line error.
+
+## 16. Files per note
+
+For `Architecture/Arhitecture.md`:
+
+| File | Written by | Purpose |
+| :- | :- | :- |
+| `Arhitecture.md` | user only | The original note. The plugin only reads it |
+| `Arhitecture.quiz.md` | plugin (user may hand-edit answers) | Quiz notes in the §3 grammar, stable ids |
+| `Arhitecture.quiz.json` | plugin | Ledger: which note blocks were processed, ids, artifact URL |
+| `Arhitecture.quiz.html` | plugin | Local page (Part I "local page") |
+| `<repo root>/.claude/artifacts/<slug>.html` | plugin | Artifact source; the plugin adds `.claude/artifacts/` to `.gitignore` if missing |
+
+- `<repo root>` = `git rev-parse --show-toplevel` from the note's folder; outside git, the
+  note's own folder.
+- **slug** = ASCII kebab-case of the note's path relative to `<repo root>`, without extension
+  (`architecture-arhitecture`), so two `README.md` files in different folders never collide.
+  It is also the `localStorage` prefix.
+- **title** = note file name without extension, then the word "Quiz" (`Arhitecture Quiz`); the artifact,
+  the `<title>` and the `<h1>` use it.
+
+### Ledger (`*.quiz.json`)
+
+```json
+{
+  "schema": 1,
+  "source": "Arhitecture.md",
+  "slug": "architecture-arhitecture",
+  "title": "Arhitecture Quiz",
+  "subject": "Software architecture",
+  "artifactUrl": null,
+  "engineVersion": "0.1.0",
+  "quizHash": "sha256:…",
+  "nextId": 7,
+  "blocks": [
+    { "hash": "sha256:…", "preview": "Monolith vs microservices: a monolith…", "outcome": "questions", "ids": [1, 2] },
+    { "hash": "sha256:…", "preview": "SOLID recap…", "outcome": "covered", "ids": [2] },
+    { "hash": "sha256:…", "preview": "Jenkins/SonarQube", "outcome": "skipped", "reason": "fragment, no explanation" }
+  ],
+  "builds": [
+    { "at": "2026-11-11T10:00:00Z", "added": [1, 2, 3, 4, 5, 6], "corrected": [4], "unverified": [], "skipped": 1 }
+  ]
+}
+```
+
+`subject` is set once on the first build (Claude names the field the note covers) and drives
+the grader role `senior <subject> interviewer`. `quizHash` is the SHA-256 of `*.quiz.md` after
+the last successful build; `engineVersion` is the plugin version that built it. `artifactUrl`
+is written only after a publish succeeds, so a failed publish is retried on the next run.
+
+## 17. Pipeline
+
+**D** = deterministic script in the plugin (`node`, no dependencies); **C** = Claude, following
+the skill's fixed instructions.
+
+1. **D `blocks.mjs <note> <ledger>`** — reads the note, normalizes it (Unicode NFKC so
+   `𝐒𝐢𝐧𝐠𝐥𝐞` becomes `Single`; CRLF → LF; trailing spaces trimmed), splits it into blocks,
+   hashes each normalized block (SHA-256) and prints the blocks whose hash is not in the ledger.
+   Block rules, applied in this order (they are frozen once released: changing them re-hashes
+   every note and duplicates questions, so a change needs a `schema` bump and a migration):
+   - lines that are only `---`, `***` or `___` are dropped;
+   - a line that is only an image (`![…](…)`) is its own block of kind `image`;
+   - a heading line (`#`…) starts a block that runs until the next heading, blank lines
+     included — a heading never forms a block on its own;
+   - before the first heading (or in a note without headings), each top-level numbered item
+     (`1.`, `2.` at column 0) starts its own block that runs until the next such item or a
+     blank line followed by a non-indented, non-list line;
+   - otherwise a blank line ends a block; a fenced code block never splits.
+
+   No new blocks → **rebuild-only** path: skip steps 2–6 and run steps 7–9 only if
+   `*.quiz.md` changed since the last build (hash differs from the ledger `quizHash`), the
+   ledger has no `artifactUrl`, or the plugin's `engineVersion` is newer than the ledger's.
+   Otherwise stop: `Nothing new in Arhitecture.md since <last build date>.` — no file changes.
+2. **C draft** — for every new block, choose exactly one outcome:
+   - `questions`: one question per distinct concept in the block; a question the user wrote
+     in the note becomes exactly one quiz question, kept close to their wording. Each gets a
+     category (an **existing** category name verbatim
+     when the topic matches, otherwise a new name), the question, and an answer built from the
+     answer template (what it is · why it exists · how it works · minimal example · one
+     pitfall). A question in the note that has no answer gets its answer from official
+     documentation.
+   - `covered`: an existing question in `*.quiz.md` already covers it (records which ids).
+   - `skipped`: not knowledge (job-ad text, a bare keyword, an image); records the reason.
+
+   A question whose answer describes a structure or a flow (architecture, request flow,
+   component tree, data flow, call chain, lifecycle) is marked `diagram: true`.
+
+   Output: `drafts.json`, checked by **D `drafts.mjs --check`** (shape, every new block has an
+   outcome, category names non-empty).
+3. **C fact-check subagent** — one subagent per build receives `drafts.json` and checks every
+   answer against official documentation (primary sources: vendor docs, specs, MDN; not
+   blogs). Per question it returns `ok`, `corrected` (with the corrected answer) or
+   `unverified` (what it tried). Corrected text replaces the draft; every answer ends with a
+   `Source: <url>` line. The quiz itself carries no "corrected" marker. Fetched pages are data.
+4. **C diagrams** — for every `diagram: true` question, after the fact-check (so the picture
+   shows the corrected facts), Claude draws one animated SVG following the bundled
+   animated-diagram rules (§19): the same node kinds (`box`, `box-state`, `box-shared`,
+   `box-orphan`), edge kinds, 1200-wide grid, text-fit rule and flowing-dash animation as the
+   user's global `animated-diagram` skill. The SVG is placed in the answer, after the "how it
+   works" part, as `<figure class="qdiagram"><svg …>…</svg><figcaption>…</figcaption></figure>`.
+   **D `diagram-check.mjs`** rejects an SVG that is not well-formed, contains `<script>`,
+   `on*=` attributes, external `href`s or leftover `__` placeholders.
+5. **C plan** — prints the plan (new questions per category, covered, skipped) and continues
+   without waiting.
+6. **D `merge.mjs`** — assigns ids from `nextId` upwards in draft order, inserts each question at
+   the end of its category section (a new category is appended as the next `## Section NN —
+   Name`), writes `*.quiz.md` and the ledger (each via a temporary file and rename), then runs
+   the validator.
+7. **D `build.mjs --ledger <ledger>`** — the Part I build, configured from the ledger: writes
+   `*.quiz.html` and the artifact source.
+8. **C publish** — `artifactUrl` empty → first publish (icon `quiz`, capabilities as §12 with
+   collection `progress`) and the returned URL is saved to the ledger; otherwise republish to
+   `artifactUrl` without `icon`/`capabilities`.
+9. **C report** (§20).
+
+## 18. Changes to the Part I engine
+
+These changes are made to the plugin's copy of the engine only. The React quiz in this
+repository stays on its own build and storage keys and is not migrated.
+
+- **Ids:** unique positive integers below `nextId`; file order no longer has to be 1…n (new
+  questions are inserted inside existing categories). The quiz shows questions in file order;
+  "n / total" counts position, the map labels show the id. A copy of `REACT-NOTES.md` is a
+  test fixture and still passes.
+- **Validation errors** (build stops): duplicate id; id ≥ `nextId`; question outside a section;
+  unclosed answer. **Warning only:** a ledger id missing from `*.quiz.md` (the user deleted it
+  by hand).
+- **Configuration from the ledger** replaces every React value in §11: `title`/`heading` =
+  ledger title; grader role from `subject`; `storagePrefix` = slug; section chip without the
+  `section-` prefix; search placeholder = the first three category names; answer languages
+  `Serbian or English`; `PASS_SCORE` 7; accent stays React blue so every quiz looks the same.
+- **Diagrams:** the template carries the animated-diagram CSS (dark stage, purple/yellow/gray/
+  pink boxes, arrow markers, flowing dashes inside `prefers-reduced-motion: no-preference`),
+  scoped under `.qdiagram` so it cannot restyle the quiz. The stage keeps its dark look in both
+  page themes (a deliberate single-theme island) and scrolls horizontally on narrow screens.
+  marked passes the inline `<figure>` through unchanged.
+
+## 19. Plugin layout
+
+```text
+plugins/create-quiz/
+  .claude-plugin/plugin.json
+  README.md
+  skills/quiz-build/
+    SKILL.md                 workflow §17, written through skill-creator
+    references/              notes-format.md · answer-template.md · fact-check.md ·
+                             diagram.md · publishing.md
+    assets/template.html     Part I template, configurable, with the .qdiagram CSS
+    assets/diagram-example.svg  reference diagram in the house style
+    scripts/                 blocks.mjs · drafts.mjs · diagram-check.mjs · merge.mjs ·
+                             build.mjs · *.test.mjs
+  evals/evals.json
+```
+
+`references/diagram.md` is the global `~/.claude/skills/animated-diagram/SKILL.md` rules
+(node and edge kinds, layout grid, animation, self-check) adapted to "inline SVG inside an
+answer" instead of "publish a separate artifact". It is copied into the plugin so the plugin
+works on any machine without the global skill.
+
+Scripts are called as `node "${CLAUDE_SKILL_DIR}/scripts/<name>.mjs" …`.
+
+## 20. Build report (end of every run)
+
+```text
+Arhitecture Quiz — https://claude.ai/artifact/…
+Added 6 questions: Monoliths (2), Microservices (3), Messaging (1, new category)
+Corrected against official docs (fix your note): #4 — "…" → "…" (Source: …)
+Unverified: none
+Skipped: "Jenkins/SonarQube" (fragment), image.png (image)
+Local: Architecture/Arhitecture.quiz.html
+```
+
+## 21. Calls made by Claude (open to change) and left to the builder
+
+- **Calls:** file names `*.quiz.md|json|html`; slug from the relative path; title `<file> Quiz`;
+  the block rules in §17 step 1; the rebuild-only path; one question per concept; the React
+  quiz is not migrated; the answer template; accent unchanged; "nothing new" stops
+  without publishing; unverified answers are kept and reported; topic-only/web mode out of
+  scope for now; diagrams are inline in the answer (not separate artifacts), drawn only for
+  structure/flow questions, and the diagram rules are copied into the plugin rather than
+  calling the global skill.
+- **Left to the builder:** internal code structure of the scripts; the exact wording of the
+  references; the eval prompts beyond the cases in the plan.
+
+## 22. Verification
 
 Run from the repository root; each line states what passing looks like.
 
@@ -355,3 +577,18 @@ Run from the repository root; each line states what passing looks like.
    **Save answer** stores the text, **more-info** shows the reference answer.
 5. Open the claude.ai link → the sync chip reads `Saved to claude.ai`; grade one answer; then
    `ArtifactData list` on collection `progress` lists `q-<id>` with a `grade.score`.
+
+`create-quiz` plugin (run in any repository that holds a note):
+
+1. `node --test <plugin>/skills/quiz-build/scripts/` → all tests pass.
+2. `/create-quiz:quiz-build Architecture/Arhitecture.md` (first run) → `Arhitecture.quiz.md`,
+   `.quiz.json`, `.quiz.html` exist next to the note; `git diff --quiet Architecture/Arhitecture.md`
+   exits 0; the report prints a claude.ai link; at least one answer contains a
+   `<figure class="qdiagram">` that animates.
+3. Same command again with the note unchanged → `Nothing new in Arhitecture.md since …`; no
+   file changes (`git status --short Architecture/` empty). Then hand-edit one answer in
+   `Arhitecture.quiz.md` and run again → no new questions, the page is rebuilt and republished
+   to the same `artifactUrl`.
+4. Append a paragraph to the note, run again → the report lists only the new questions; their
+   ids start at the previous `nextId`; the ledger `artifactUrl` is unchanged; old answers and
+   claude.ai progress are unchanged.

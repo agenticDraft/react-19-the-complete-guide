@@ -1,4 +1,3 @@
-REACT-DOCS.md
 *.zip
 node_modules/
 dist/
@@ -31,3 +30,5 @@ settings.json
 *.yaml
 .playwright-mcp
 .claude/artifacts/
+docs
+react-quiz
