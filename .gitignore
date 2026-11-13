@@ -30,5 +30,5 @@ settings.json
 *.yaml
 .playwright-mcp
 .claude/artifacts/
-docs
-react-quiz
+docs/
+react-quiz/
